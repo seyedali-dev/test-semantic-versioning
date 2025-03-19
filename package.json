@@ -1,13 +1,14 @@
 {
   "name": "semantic-version-test",
-  "version": "1.0.0",
+  "version": "0.0.0-development",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "semantic-release": "semantic-release --branches main"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/seyedali-dev/test-semantic-versioning.git"
+    "url": "https://github.com/seyedali-dev/test-semantic-versioning.git"
   },
   "keywords": [],
   "author": "",
@@ -16,5 +17,8 @@
     "url": "https://github.com/seyedali-dev/test-semantic-versioning/issues"
   },
   "homepage": "https://github.com/seyedali-dev/test-semantic-versioning#readme",
-  "description": ""
+  "description": "",
+  "devDependencies": {
+    "semantic-release": "^24.2.3"
+  }
 }
