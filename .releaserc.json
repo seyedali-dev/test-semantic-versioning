@@ -1,37 +1,23 @@
 {
-  "branches": [
-    "main",
-    {
-      "name": "develop",
-      "prerelease": "BETA",
-      "channel": "beta"
-    }
-  ],
+  "branches": ["develop"],
   "plugins": [
-    "@semantic-release/commit-analyzer",
+    ["@semantic-release/commit-analyzer", {
+      "preset": "conventionalcommits"
+    }],
     "@semantic-release/release-notes-generator",
-    [
-      "@semantic-release/npm",
-      {
-        "npmPublish": false
-      }
-    ],
-    [
-      "@semantic-release/github",
-      {
-        "assets": []
-      }
-    ],
-    [
-      "@semantic-release/git",
-      {
-        "assets": [
-          "package.json",
-          "frontend/package.json",
-          "backend/freetoolsy-server/pom.xml"
-        ],
-        "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
-      }
-    ]
-  ]
+    ["@semantic-release/npm", {
+      "pkgRoot": "frontend",
+      "npmPublish": false
+    }],
+    ["@semantic-release/exec", {
+      "verifyConditionsCmd": "node -e \"if (require('child_process').execSync('git log --pretty=format:%s -n 1').toString().includes('[beta]')) process.exit(1);\"",
+      "prepareCmd": "node -e \"const v = '${nextRelease.version}'; require('child_process').execSync('git log --pretty=format:%s -n 1').toString().includes('[beta]') ? require('fs').writeFileSync('.next-version', v + '-BETA') : require('fs').writeFileSync('.next-version', v);\" && mvn versions:set -DnewVersion=$(cat .next-version) -f backend/freetoolsy-server/pom.xml",
+      "successCmd": "node -e \"if (require('child_process').execSync('git log --pretty=format:%s -n 1').toString().includes('[beta]')) require('child_process').execSync('git tag -f v${nextRelease.version}-BETA && git push --force --tags');\""
+    }],
+    "@semantic-release/github",
+    ["@semantic-release/git", {
+      "assets": ["frontend/package.json", "backend/freetoolsy-server/pom.xml"]
+    }]
+  ],
+  "tagFormat": "v${version}"
 }
