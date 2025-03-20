@@ -1,53 +1,32 @@
-name: Node.js CI
+name: Release
 
 on:
   push:
-    branches: [ "*" ]
-  pull_request:
-    branches: [ '*' ]
+    branches:
+      - main
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [ 22.x ]
-
     steps:
-      - uses: actions/checkout@v4
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Ensures full Git history for commit analysis
+
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-      - run: npm ci
+          node-version: '20'  # Use a supported version (e.g., 20)
 
-  publish:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write  # Allows pushing tags/releases
-      issues: write    # Required for creating GitHub issues
-    if: ${{ github.ref == 'refs/heads/main' }}
-    needs: [ build ]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITUB_TOKEN }}
+      - name: Install dependencies
+        run: npm install
 
-      - name: Configure Git
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${{ secrets.GITUB_TOKEN }}@github.com/${{ github.repository }}
+      - name: Configure Git remote with token
+        run: git remote set-url origin https://${{ secrets.PAT }}@github.com/seyedali-dev/test-semantic-versioning.git
 
-      - name: Use Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-
-      - run: npm ci
-      - run: npm run semantic-release
+      - name: Run Semantic Release
+        run: npx semantic-release
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PAT }}
