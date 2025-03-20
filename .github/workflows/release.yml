@@ -31,7 +31,7 @@ jobs:
         run: npm install @semantic-release/commit-analyzer @semantic-release/release-notes-generator @semantic-release/npm @semantic-release/exec @semantic-release/git @semantic-release/github conventional-changelog-conventionalcommits
 
       - name: Configure Git remote with token
-        run: git remote set-url origin https://${{ secrets.PAT }}@github.com/<your-username>/<your-repo>.git
+        run: git remote set-url origin https://${{ secrets.PAT }}@github.com/seyedali-dev/test-semantic-versioning.git
 
       - name: Run Custom Release Script
         run: node release.js
