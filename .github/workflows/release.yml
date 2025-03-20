@@ -32,7 +32,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          token: ${{ github.GITUB_TOKEN }}
+          token: ${{ secrets.GITUB_TOKEN }}
 
       - name: Configure Git
         run: |
