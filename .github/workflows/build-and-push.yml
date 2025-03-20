@@ -5,6 +5,8 @@ on:
     types: [ closed ]
     branches:
       - main
+  repository_dispatch:
+    types: [ new-release ]
   workflow_dispatch:
 
 jobs:
@@ -12,12 +14,24 @@ jobs:
     runs-on: ubuntu-latest
     env:
       IMAGE_NAME: dukeofjava/freetoolsy-client
-      VERSION: 0.1-BETA
 
     steps:
       # Checkout code
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Get package version
+      - name: Get Version
+        id: get_version
+        run: |
+          if [[ "${{ github.event_name }}" == "repository_dispatch" ]]; then
+            echo "VERSION=${{ github.event.client_payload.version }}" >> $GITHUB_OUTPUT
+          else
+            VERSION=$(cat frontend/package.json | jq -r .version)
+            echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+          fi
 
       # List files for Debugging
       - name: List Files in Frontend
@@ -42,7 +56,7 @@ jobs:
         with:
           context: frontend/.
           file: frontend/Dockerfile
-          tags: "${{ env.IMAGE_NAME }}:${{ env.VERSION }}"
+          tags: "${{ env.IMAGE_NAME }}:${{ steps.get_version.outputs.VERSION }}"
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
           build-args: |
@@ -63,7 +77,7 @@ jobs:
         with:
           context: frontend/.
           file: frontend/Dockerfile
-          tags: ${{ env.IMAGE_NAME }}:${{ env.VERSION }},${{ env.IMAGE_NAME }}:latest
+          tags: ${{ env.IMAGE_NAME }}:${{ steps.get_version.outputs.VERSION }},${{ env.IMAGE_NAME }}:latest
           push: true
           # Leverage existing cache from previous steps
           cache-from: type=local,src=/tmp/.buildx-cache
@@ -93,6 +107,20 @@ jobs:
       # Checkout code
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Get package version
+      - name: Get Version
+        id: get_version
+        run: |
+          if [[ "${{ github.event_name }}" == "repository_dispatch" ]]; then
+            echo "VERSION=${{ github.event.client_payload.version }}" >> $GITHUB_OUTPUT
+          else
+            cd backend/freetoolsy-server
+            VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+            echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+          fi
 
       # List files for Debugging
       - name: List Files in Backend
@@ -131,7 +159,7 @@ jobs:
           DATABASE_USERNAME: test_user
           DATABASE_PASSWORD: test_password
         run: |
-          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
           TAG="${IMAGE_NAME}:${VERSION}"
           TAG_LATEST="${IMAGE_NAME}:latest"
           echo "Building and pushing Docker image: $TAG and $TAG_LATEST"
