@@ -2,7 +2,7 @@ name: Build and Push on Merge to Main
 
 on:
   pull_request:
-    types: [ closed ]
+    types: [ closed, opened ]
     branches:
       - main
   workflow_dispatch:
