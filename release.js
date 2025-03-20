@@ -1,23 +1,11 @@
-const {execSync} = require('child_process');
+const { execSync } = require('child_process');
 const semanticRelease = require('semantic-release');
 
-/**
- * Returns true if the current commit is a beta release.
- * A beta release is identified by having "[beta]" in the commit message.
- * @returns {boolean} True if the current commit is a beta release.
- */
 function isBetaRelease() {
-    const commits = execSync('git log --pretty=format:%s -n 1').toString().trim();
-    return commits.includes('[beta]');
+    const latestCommit = execSync('git log --pretty=format:%s -n 1').toString().trim();
+    return latestCommit.includes('[beta]');
 }
 
-/**
- * Runs a release with the given configuration.
- * The configuration is based on the 'develop' branch.
- * If the current commit is a beta release, it will be added to the configuration.
- *
- * @returns {Promise<void>} Resolves when the release is finished.
- */
 async function runRelease() {
     const beta = isBetaRelease();
     const config = {
@@ -26,33 +14,48 @@ async function runRelease() {
             ['@semantic-release/commit-analyzer', {
                 preset: 'conventionalcommits',
                 releaseRules: [
-                    {type: 'feat', release: 'minor'},
-                    {type: 'fix', release: 'patch'},
-                    {type: 'perf', release: 'patch'},
-                    {breaking: true, release: 'major'},
-                ],
+                    { type: 'feat', release: 'minor' },
+                    { type: 'fix', release: 'patch' },
+                    { type: 'perf', release: 'patch' },
+                    { breaking: true, release: 'major' }
+                ]
             }],
             '@semantic-release/release-notes-generator',
             ['@semantic-release/npm', {
                 pkgRoot: 'frontend',
-                npmPublish: false,
+                npmPublish: false
             }],
             ['@semantic-release/exec', {
-                prepareCmd: `mvn versions:set -DnewVersion=\${nextRelease.version} -f backend/freetoolsy-server/pom.xml`,
+                prepareCmd: 'mvn versions:set -DnewVersion=${nextRelease.version} -f backend/freetoolsy-server/pom.xml'
             }],
             '@semantic-release/github',
             ['@semantic-release/git', {
-                assets: ['frontend/package.json', 'backend/freetoolsy-server/pom.xml'],
-            }],
+                assets: ['frontend/package.json', 'backend/freetoolsy-server/pom.xml']
+            }]
         ],
-        tagFormat: 'v${version}',
+        tagFormat: 'v${version}'
     };
 
     if (beta) {
-        config.prerelease = 'BETA';
+        config.prepare = config.prepare || [];
+        config.prepare.push({
+            path: '@semantic-release/exec',
+            cmd: 'echo "BETA release detected"; echo "${nextRelease.version}-BETA" > .next-version'
+        });
+        config.success = config.success || [];
+        config.success.push({
+            path: '@semantic-release/exec',
+            cmd: 'git tag -f v${nextRelease.version}-BETA && git push --force --tags'
+        });
     }
 
-    await semanticRelease(config);
+    const result = await semanticRelease(config);
+    if (!result) {
+        console.log('No release published.');
+    }
 }
 
-runRelease().catch(console.error);
+runRelease().catch(err => {
+    console.error(err);
+    process.exit(1);
+});
