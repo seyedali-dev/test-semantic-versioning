@@ -2,14 +2,14 @@ name: Build and Push on Merge to Main
 
 on:
   pull_request:
-    types: [ closed, opened ]
+    types: [ closed ]
     branches:
       - main
   workflow_dispatch:
 
 jobs:
   build-and-push-frontend:
-    if: github.event.pull_request.merged == true
+#    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -39,7 +39,7 @@ jobs:
             ${{ secrets.DOCKER_USERNAME }}/frontend:latest
 
   build-and-push-backend:
-    if: github.event.pull_request.merged == true
+#    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
